@@ -74,6 +74,14 @@ const Index = () => {
         <SpeechLibrary
           speeches={speeches}
           onSelect={handleSelectSpeech}
+          onPlay={(speech) => {
+            setText(speech.text);
+            setTitle(speech.title);
+            setEditingId(speech.id);
+            setAudioUrl(speech.audioUrl);
+            setPlayWithAudio(true);
+            setView("prompter");
+          }}
           onNew={handleNew}
           onRefresh={refreshSpeeches}
         />
