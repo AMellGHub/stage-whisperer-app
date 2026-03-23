@@ -15,7 +15,7 @@ interface SpeechLibraryProps {
   onRefresh: () => void;
 }
 
-export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onRefresh }: SpeechLibraryProps) {
+export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onBack, onRefresh }: SpeechLibraryProps) {
   const [search, setSearch] = useState("");
 
   const filtered = speeches.filter(
