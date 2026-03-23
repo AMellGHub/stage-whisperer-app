@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Play, Edit3, Plus, BookOpen } from "lucide-react";
+import { Trash2, Play, Edit3, Plus, BookOpen, Headphones, Mic } from "lucide-react";
 import { Speech, deleteSpeech } from "@/lib/speechStorage";
 import { toast } from "@/hooks/use-toast";
 
