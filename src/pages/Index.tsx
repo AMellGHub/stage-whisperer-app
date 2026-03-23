@@ -88,11 +88,12 @@ const Index = () => {
         title={title}
         onTextChange={setText}
         onTitleChange={setTitle}
-        onStart={() => setView("prompter")}
+        onStart={() => { setPlayWithAudio(false); setView("prompter"); }}
         onSave={handleSave}
         onShowLibrary={() => setView("library")}
         isEditing={!!editingId}
         currentAudioUrl={audioUrl}
+        onPlayRecording={() => { setPlayWithAudio(true); setView("prompter"); }}
       />
     </div>
   );
