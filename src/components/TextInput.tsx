@@ -286,6 +286,17 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
         )}
 
         <Button
+          onClick={onSave}
+          disabled={!text.trim() || isRecording || isProcessing}
+          variant="outline"
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+        >
+          <Save className="w-5 h-5" />
+          {isEditing ? "Update" : "Save"}
+        </Button>
+
+        <Button
           onClick={onStart}
           disabled={!text.trim() || isRecording || isProcessing}
           size="lg"
