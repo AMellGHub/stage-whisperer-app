@@ -325,7 +325,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           {isSpeaking ? "Stop" : "Read"}
         </Button>
 
-
+        <Button
           onClick={onStart}
           disabled={!text.trim() || isRecording || isProcessing}
           size="lg"
