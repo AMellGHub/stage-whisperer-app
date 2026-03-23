@@ -63,10 +63,10 @@ export function findMatchPosition(
     const distance = Math.abs(i - lastMatchIndex);
     score -= distance * 0.3;
 
-    // Require at least 3 consecutive matches, or 2 if very close
-    const minConsecutive = distance <= 3 ? 2 : 3;
+    // Require at least 2 consecutive matches, or 1 if very close
+    const minConsecutive = distance <= 3 ? 1 : 2;
 
-    if (score > bestScore && maxConsecutive >= minConsecutive && totalMatched >= 2) {
+    if (score > bestScore && maxConsecutive >= minConsecutive && totalMatched >= 1) {
       bestScore = score;
       bestIndex = i + totalMatched;
     }
