@@ -8,11 +8,12 @@ interface UseSpeechRecognitionOptions {
 export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechRecognitionOptions) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const restartTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const w = window as any;
+    setIsSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
     setIsSupported(!!SpeechRecognition);
   }, []);
 
