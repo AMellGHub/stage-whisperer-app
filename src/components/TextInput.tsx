@@ -13,10 +13,12 @@ interface TextInputProps {
 
 export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingLabel, setProcessingLabel] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const startRecording = useCallback(() => {
     const w = window as any;
