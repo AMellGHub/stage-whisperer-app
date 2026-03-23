@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen, Volume2, VolumeX } from "lucide-react";
