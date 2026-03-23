@@ -33,7 +33,7 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
 
     stop();
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.continuous = continuous;
     recognition.interimResults = true;
     recognition.lang = "en-US";
