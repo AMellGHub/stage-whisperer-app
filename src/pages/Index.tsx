@@ -12,6 +12,7 @@ const Index = () => {
   const [title, setTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | undefined>();
+  const [playWithAudio, setPlayWithAudio] = useState(false);
   const [view, setView] = useState<View>("editor");
   const [speeches, setSpeeches] = useState<Speech[]>([]);
 
@@ -62,6 +63,7 @@ const Index = () => {
       <TeleprompterDisplay
         text={text}
         onExit={() => setView("editor")}
+        audioUrl={playWithAudio ? audioUrl : undefined}
       />
     );
   }
@@ -86,11 +88,12 @@ const Index = () => {
         title={title}
         onTextChange={setText}
         onTitleChange={setTitle}
-        onStart={() => setView("prompter")}
+        onStart={() => { setPlayWithAudio(false); setView("prompter"); }}
         onSave={handleSave}
         onShowLibrary={() => setView("library")}
         isEditing={!!editingId}
         currentAudioUrl={audioUrl}
+        onPlayRecording={() => { setPlayWithAudio(true); setView("prompter"); }}
       />
     </div>
   );

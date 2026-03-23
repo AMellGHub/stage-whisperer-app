@@ -1,21 +1,24 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Mic, MicOff, RotateCcw, ChevronDown, ChevronUp, Play, Pause } from "lucide-react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { findMatchPosition } from "@/lib/textMatcher";
 
 interface TeleprompterDisplayProps {
   text: string;
   onExit: () => void;
+  audioUrl?: string;
 }
 
-export function TeleprompterDisplay({ text, onExit }: TeleprompterDisplayProps) {
+export function TeleprompterDisplay({ text, onExit, audioUrl }: TeleprompterDisplayProps) {
   const words = text.split(/\s+/).filter(Boolean);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [fontSize, setFontSize] = useState(2.5); // rem
+  const [fontSize, setFontSize] = useState(2.5);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const currentWordRef = useRef<HTMLSpanElement>(null);
   const lastMatchRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleSpeechResult = useCallback(
     (transcript: string) => {
@@ -39,6 +42,18 @@ export function TeleprompterDisplay({ text, onExit }: TeleprompterDisplayProps) 
       start();
     }
   }, [isSupported, start]);
+
+  // Auto-play audio if provided
+  useEffect(() => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => setIsAudioPlaying(false);
+      audio.onerror = () => setIsAudioPlaying(false);
+      audio.play().then(() => setIsAudioPlaying(true)).catch(() => {});
+      return () => { audio.pause(); audioRef.current = null; };
+    }
+  }, [audioUrl]);
 
   // Scroll current word into view
   useEffect(() => {
@@ -107,6 +122,25 @@ export function TeleprompterDisplay({ text, onExit }: TeleprompterDisplayProps) 
           <Button variant="outline" size="icon" onClick={handleReset}>
             <RotateCcw className="w-4 h-4" />
           </Button>
+
+          {audioUrl && (
+            <Button
+              variant={isAudioPlaying ? "default" : "outline"}
+              size="icon"
+              onClick={() => {
+                if (!audioRef.current) return;
+                if (isAudioPlaying) {
+                  audioRef.current.pause();
+                  setIsAudioPlaying(false);
+                } else {
+                  audioRef.current.play();
+                  setIsAudioPlaying(true);
+                }
+              }}
+            >
+              {isAudioPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </Button>
+          )}
 
           <Button
             variant={isListening ? "default" : "outline"}

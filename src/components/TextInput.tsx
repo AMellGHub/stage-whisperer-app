@@ -15,21 +15,22 @@ interface TextInputProps {
   onShowLibrary: () => void;
   isEditing: boolean;
   currentAudioUrl?: string;
+  onPlayRecording?: () => void;
 }
 
-export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing, currentAudioUrl }: TextInputProps) {
+export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing, currentAudioUrl, onPlayRecording }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
   const [audioUrl, setAudioUrl] = useState<string | undefined>(currentAudioUrl);
-  const [isPlaying, setIsPlaying] = useState(false);
+  
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
 
   // Sync currentAudioUrl prop
   const prevAudioUrlRef = useRef(currentAudioUrl);
@@ -156,23 +157,6 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
     }
   }, [uploadAudio]);
 
-  const handlePlayAudio = useCallback(() => {
-    if (!audioUrl) return;
-
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setIsPlaying(false);
-      return;
-    }
-
-    const audio = new Audio(audioUrl);
-    audio.onended = () => { setIsPlaying(false); audioRef.current = null; };
-    audio.onerror = () => { setIsPlaying(false); audioRef.current = null; };
-    audioRef.current = audio;
-    setIsPlaying(true);
-    audio.play();
-  }, [audioUrl, isPlaying]);
 
   const handleSave = useCallback(() => {
     onSave(audioUrl);
@@ -330,13 +314,13 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
       {audioUrl && (
         <div className="w-full flex items-center gap-3 px-3 py-2 bg-card border border-border rounded-md">
           <Button
-            variant={isPlaying ? "destructive" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={handlePlayAudio}
+            onClick={onPlayRecording}
             className="gap-2"
           >
-            {isPlaying ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            {isPlaying ? "Stop" : "Play Recording"}
+            <Play className="w-4 h-4" />
+            Play with Prompter
           </Button>
           <span className="text-xs text-muted-foreground">Voice recording saved</span>
         </div>
