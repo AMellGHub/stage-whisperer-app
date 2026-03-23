@@ -1,12 +1,13 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Mic, MicOff, RotateCcw, ChevronDown, ChevronUp, Play, Pause } from "lucide-react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { findMatchPosition } from "@/lib/textMatcher";
 
 interface TeleprompterDisplayProps {
   text: string;
   onExit: () => void;
+  audioUrl?: string;
 }
 
 export function TeleprompterDisplay({ text, onExit }: TeleprompterDisplayProps) {
