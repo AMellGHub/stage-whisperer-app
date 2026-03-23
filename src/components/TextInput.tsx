@@ -267,8 +267,8 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
             Voice<span className="text-primary">Prompter</span>
           </h1>
-          <Button variant="ghost" size="icon" onClick={onShowLibrary} className="text-muted-foreground">
-            <BookOpen className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={onShowLibrary} className="text-muted-foreground h-10 w-10">
+            <BookOpen className="w-8 h-8" />
           </Button>
         </div>
         <p className="text-muted-foreground text-lg">
