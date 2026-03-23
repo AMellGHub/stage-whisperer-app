@@ -30,7 +30,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
 
   // Sync currentAudioUrl prop
   const prevAudioUrlRef = useRef(currentAudioUrl);
