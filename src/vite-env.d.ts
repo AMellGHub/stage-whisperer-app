@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-interface SpeechRecognition extends EventTarget {
+interface SpeechRecognitionInstance extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
@@ -17,15 +17,9 @@ interface SpeechRecognitionErrorEvent extends Event {
   error: string;
 }
 
-interface SpeechRecognitionConstructor {
-  new (): SpeechRecognition;
-}
-
 declare global {
   interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    SpeechRecognition: { new (): SpeechRecognitionInstance } | undefined;
+    webkitSpeechRecognition: { new (): SpeechRecognitionInstance } | undefined;
   }
 }
-
-export {};
