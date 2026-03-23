@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen, Volume2, VolumeX } from "lucide-react";
@@ -21,10 +21,30 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Load available voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const available = window.speechSynthesis.getVoices();
+      if (available.length > 0) {
+        setVoices(available);
+        // Default to first English voice
+        if (!selectedVoiceURI) {
+          const defaultVoice = available.find(v => v.lang.startsWith("en") && v.default) || available.find(v => v.lang.startsWith("en")) || available[0];
+          if (defaultVoice) setSelectedVoiceURI(defaultVoice.voiceURI);
+        }
+      }
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
 
   const startRecording = useCallback(() => {
     const w = window as any;
@@ -190,6 +210,8 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
     if (!text.trim()) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
+    const voice = voices.find(v => v.voiceURI === selectedVoiceURI);
+    if (voice) utterance.voice = voice;
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.onend = () => setIsSpeaking(false);
@@ -197,7 +219,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
 
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  }, [text, isSpeaking]);
+  }, [text, isSpeaking, voices, selectedVoiceURI]);
 
   const isSupported = typeof window !== "undefined" && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
@@ -314,16 +336,32 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           <Save className="w-5 h-5" />
           {isEditing ? "Update" : "Save"}
         </Button>
-        <Button
-          onClick={handleReadToMe}
-          disabled={!text.trim() || isRecording || isProcessing}
-          variant={isSpeaking ? "destructive" : "outline"}
-          size="lg"
-          className="gap-2 text-lg px-6 py-6"
-        >
-          {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          {isSpeaking ? "Stop" : "Read"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {voices.length > 0 && (
+            <select
+              value={selectedVoiceURI}
+              onChange={(e) => setSelectedVoiceURI(e.target.value)}
+              className="h-12 rounded-md border border-border bg-card text-foreground text-sm px-2 max-w-[140px]"
+              disabled={isSpeaking}
+            >
+              {voices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name.replace(/Google |Microsoft |Apple /, "")} ({v.lang})
+                </option>
+              ))}
+            </select>
+          )}
+          <Button
+            onClick={handleReadToMe}
+            disabled={!text.trim() || isRecording || isProcessing}
+            variant={isSpeaking ? "destructive" : "outline"}
+            size="lg"
+            className="gap-2 text-lg px-6 py-6"
+          >
+            {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            {isSpeaking ? "Stop" : "Read"}
+          </Button>
+        </div>
 
         <Button
           onClick={onStart}
