@@ -150,7 +150,6 @@ export function TeleprompterDisplay({ text, onExit, audioUrl }: TeleprompterDisp
           >
             {isListening ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
           </Button>
-          </Button>
         </div>
       </div>
 
