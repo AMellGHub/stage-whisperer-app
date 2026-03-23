@@ -210,6 +210,8 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
     if (!text.trim()) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
+    const voice = voices.find(v => v.voiceURI === selectedVoiceURI);
+    if (voice) utterance.voice = voice;
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.onend = () => setIsSpeaking(false);
@@ -217,7 +219,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
 
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  }, [text, isSpeaking]);
+  }, [text, isSpeaking, voices, selectedVoiceURI]);
 
   const isSupported = typeof window !== "undefined" && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
