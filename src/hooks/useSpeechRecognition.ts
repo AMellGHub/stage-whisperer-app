@@ -28,8 +28,9 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
   }, []);
 
   const start = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const w = window as any;
+    const SpeechRecognitionCtor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
 
     stop();
 
