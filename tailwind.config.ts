@@ -47,6 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        teleprompter: {
+          spoken: "hsl(var(--teleprompter-spoken))",
+          current: "hsl(var(--teleprompter-current))",
+          upcoming: "hsl(var(--teleprompter-upcoming))",
+          bg: "hsl(var(--teleprompter-bg))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
