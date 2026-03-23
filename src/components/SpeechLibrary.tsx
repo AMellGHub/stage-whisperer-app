@@ -43,6 +43,9 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onBack, onRef
     <div className="flex flex-col gap-4 w-full max-w-3xl mx-auto px-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={onBack} className="h-9 w-9">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <BookOpen className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">Saved Speeches</h2>
         </div>
