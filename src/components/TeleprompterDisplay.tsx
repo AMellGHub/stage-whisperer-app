@@ -123,6 +123,25 @@ export function TeleprompterDisplay({ text, onExit, audioUrl }: TeleprompterDisp
             <RotateCcw className="w-4 h-4" />
           </Button>
 
+          {audioUrl && (
+            <Button
+              variant={isAudioPlaying ? "default" : "outline"}
+              size="icon"
+              onClick={() => {
+                if (!audioRef.current) return;
+                if (isAudioPlaying) {
+                  audioRef.current.pause();
+                  setIsAudioPlaying(false);
+                } else {
+                  audioRef.current.play();
+                  setIsAudioPlaying(true);
+                }
+              }}
+            >
+              {isAudioPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </Button>
+          )}
+
           <Button
             variant={isListening ? "default" : "outline"}
             size="icon"
@@ -130,6 +149,7 @@ export function TeleprompterDisplay({ text, onExit, audioUrl }: TeleprompterDisp
             disabled={!isSupported}
           >
             {isListening ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          </Button>
           </Button>
         </div>
       </div>
