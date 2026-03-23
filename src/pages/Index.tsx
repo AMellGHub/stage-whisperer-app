@@ -83,6 +83,7 @@ const Index = () => {
             setView("prompter");
           }}
           onNew={handleNew}
+          onBack={() => setView("editor")}
           onRefresh={refreshSpeeches}
         />
       </div>
