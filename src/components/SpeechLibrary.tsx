@@ -88,11 +88,25 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onRefresh }: 
                     <span>Updated {formatDate(speech.updatedAt)}</span>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 shrink-0">
+                  {speech.audioUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlay(speech);
+                      }}
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Play
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelect(speech);
@@ -103,7 +117,7 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onRefresh }: 
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(speech.id, speech.title);
