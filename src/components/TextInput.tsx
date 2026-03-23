@@ -314,8 +314,18 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           <Save className="w-5 h-5" />
           {isEditing ? "Update" : "Save"}
         </Button>
-
         <Button
+          onClick={handleReadToMe}
+          disabled={!text.trim() || isRecording || isProcessing}
+          variant={isSpeaking ? "destructive" : "outline"}
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+        >
+          {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          {isSpeaking ? "Stop" : "Read"}
+        </Button>
+
+
           onClick={onStart}
           disabled={!text.trim() || isRecording || isProcessing}
           size="lg"
