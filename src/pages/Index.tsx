@@ -82,6 +82,14 @@ const Index = () => {
             setPlayWithAudio(true);
             setView("prompter");
           }}
+          onPractice={(speech) => {
+            setText(speech.text);
+            setTitle(speech.title);
+            setEditingId(speech.id);
+            setAudioUrl(speech.audioUrl);
+            setPlayWithAudio(false);
+            setView("prompter");
+          }}
           onNew={handleNew}
           onBack={() => setView("editor")}
           onRefresh={refreshSpeeches}
@@ -97,9 +105,9 @@ const Index = () => {
         title={title}
         onTextChange={setText}
         onTitleChange={setTitle}
-        onStart={() => { if (text.trim()) handleSave(); setPlayWithAudio(false); setView("prompter"); }}
+        onStart={() => { setPlayWithAudio(false); setView("prompter"); }}
         onSave={handleSave}
-        onShowLibrary={() => { if (text.trim()) handleSave(); setView("library"); }}
+        onShowLibrary={() => setView("library")}
         isEditing={!!editingId}
         currentAudioUrl={audioUrl}
         onPlayRecording={() => { setPlayWithAudio(true); setView("prompter"); }}
