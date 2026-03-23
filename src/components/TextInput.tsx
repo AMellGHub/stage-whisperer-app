@@ -7,8 +7,13 @@ import { toast } from "@/hooks/use-toast";
 
 interface TextInputProps {
   text: string;
+  title: string;
   onTextChange: (text: string) => void;
+  onTitleChange: (title: string) => void;
   onStart: () => void;
+  onSave: () => void;
+  onShowLibrary: () => void;
+  isEditing: boolean;
 }
 
 export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
