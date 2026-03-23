@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Play, Edit3, Plus, BookOpen, Headphones, Mic, ArrowLeft } from "lucide-react";
+import { Trash2, Play, Plus, BookOpen, Mic, ArrowLeft } from "lucide-react";
 import { Speech, deleteSpeech } from "@/lib/speechStorage";
 import { toast } from "@/hooks/use-toast";
 
@@ -10,12 +10,13 @@ interface SpeechLibraryProps {
   speeches: Speech[];
   onSelect: (speech: Speech) => void;
   onPlay: (speech: Speech) => void;
+  onPractice: (speech: Speech) => void;
   onNew: () => void;
   onBack: () => void;
   onRefresh: () => void;
 }
 
-export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onBack, onRefresh }: SpeechLibraryProps) {
+export function SpeechLibrary({ speeches, onSelect, onPlay, onPractice, onNew, onBack, onRefresh }: SpeechLibraryProps) {
   const [search, setSearch] = useState("");
 
   const filtered = speeches.filter(
@@ -103,8 +104,8 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onBack, onRef
                         onPlay(speech);
                       }}
                     >
-                      <Headphones className="w-3.5 h-3.5" />
-                      Listen
+                      <Play className="w-3.5 h-3.5" />
+                      Play Audio
                     </Button>
                   )}
                   <Button
@@ -113,7 +114,7 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onBack, onRef
                     className="gap-1.5 text-xs h-8"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSelect(speech);
+                      onPractice(speech);
                     }}
                   >
                     <Mic className="w-3.5 h-3.5" />
