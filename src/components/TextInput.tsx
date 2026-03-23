@@ -331,13 +331,13 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
       {audioUrl && (
         <div className="w-full flex items-center gap-3 px-3 py-2 bg-card border border-border rounded-md">
           <Button
-            variant={isPlaying ? "destructive" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={handlePlayAudio}
+            onClick={onPlayRecording}
             className="gap-2"
           >
-            {isPlaying ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            {isPlaying ? "Stop" : "Play Recording"}
+            <Play className="w-4 h-4" />
+            Play with Prompter
           </Button>
           <span className="text-xs text-muted-foreground">Voice recording saved</span>
         </div>
