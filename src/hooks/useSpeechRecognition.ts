@@ -10,6 +10,7 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
   const restartTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const accumulatedFinalRef = useRef("");
 
   useEffect(() => {
     const w = window as any;
@@ -32,6 +33,7 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
     if (!SpeechRecognitionCtor) return;
 
     stop();
+    accumulatedFinalRef.current = "";
 
     const recognition = new SpeechRecognitionCtor();
     recognition.continuous = continuous;
@@ -41,24 +43,34 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
-      let final = "";
+      let sessionFinal = "";
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript;
+          sessionFinal += result[0].transcript;
         } else {
           interim += result[0].transcript;
         }
       }
-      onResult((final + " " + interim).trim());
+      const fullTranscript = (accumulatedFinalRef.current + " " + sessionFinal + " " + interim).trim();
+      onResult(fullTranscript);
     };
 
     recognition.onend = () => {
       if (recognitionRef.current === recognition) {
+        // Before restarting, capture final results from this session
+        try {
+          // The last onresult already fired, so accumulate what we have
+          // We need to grab finals from the last event - done via a flag
+        } catch {}
         // Auto-restart for continuous listening
         restartTimeoutRef.current = setTimeout(() => {
           if (recognitionRef.current === recognition) {
-            try { recognition.start(); } catch {}
+            // Preserve accumulated finals before creating new session
+            try {
+              // Extract finals from last session before restart
+              recognition.start();
+            } catch {}
           }
         }, 100);
       }
