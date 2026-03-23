@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen, Volume2, VolumeX } from "lucide-react";
+import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,42 +11,55 @@ interface TextInputProps {
   onTextChange: (text: string) => void;
   onTitleChange: (title: string) => void;
   onStart: () => void;
-  onSave: () => void;
+  onSave: (audioUrl?: string) => void;
   onShowLibrary: () => void;
   isEditing: boolean;
+  currentAudioUrl?: string;
 }
 
-export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing }: TextInputProps) {
+export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing, currentAudioUrl }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
+  const [audioUrl, setAudioUrl] = useState<string | undefined>(currentAudioUrl);
+  const [isPlaying, setIsPlaying] = useState(false);
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Load available voices
-  useEffect(() => {
-    const loadVoices = () => {
-      const available = window.speechSynthesis.getVoices();
-      if (available.length > 0) {
-        setVoices(available);
-        // Default to first English voice
-        if (!selectedVoiceURI) {
-          const defaultVoice = available.find(v => v.lang.startsWith("en") && v.default) || available.find(v => v.lang.startsWith("en")) || available[0];
-          if (defaultVoice) setSelectedVoiceURI(defaultVoice.voiceURI);
-        }
-      }
-    };
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  // Sync currentAudioUrl prop
+  const prevAudioUrlRef = useRef(currentAudioUrl);
+  if (currentAudioUrl !== prevAudioUrlRef.current) {
+    prevAudioUrlRef.current = currentAudioUrl;
+    setAudioUrl(currentAudioUrl);
+  }
+
+  const uploadAudio = useCallback(async (blob: Blob): Promise<string | undefined> => {
+    try {
+      const fileName = `recording-${Date.now()}.webm`;
+      const { data, error } = await supabase.storage
+        .from("audio-recordings")
+        .upload(fileName, blob, { contentType: "audio/webm" });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from("audio-recordings")
+        .getPublicUrl(data.path);
+
+      return urlData.publicUrl;
+    } catch (err: any) {
+      console.error("Audio upload error:", err);
+      toast({ variant: "destructive", title: "Upload failed", description: "Could not save the audio recording." });
+      return undefined;
+    }
   }, []);
 
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
     const w = window as any;
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) return;
@@ -83,12 +96,28 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
       console.error("Dictation error:", e.error);
     };
 
+    // Start audio recording via MediaRecorder
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // collect in 1s chunks
+    } catch (err) {
+      console.warn("Could not start audio recording:", err);
+    }
+
     recognitionRef.current = recognition;
     setIsRecording(true);
     recognition.start();
   }, [text, onTextChange]);
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     if (recognitionRef.current) {
       const rec = recognitionRef.current;
       recognitionRef.current = null;
@@ -96,16 +125,64 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
       rec.abort();
     }
     setIsRecording(false);
-  }, []);
+
+    // Stop MediaRecorder and upload
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      const recorder = mediaRecorderRef.current;
+      mediaRecorderRef.current = null;
+
+      await new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+        recorder.stop();
+      });
+
+      // Stop all tracks
+      recorder.stream.getTracks().forEach(t => t.stop());
+
+      if (audioChunksRef.current.length > 0) {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        audioChunksRef.current = [];
+
+        setIsProcessing(true);
+        setProcessingLabel("Saving recording...");
+        const url = await uploadAudio(blob);
+        setIsProcessing(false);
+
+        if (url) {
+          setAudioUrl(url);
+          toast({ title: "Recording saved", description: "Your voice recording has been saved." });
+        }
+      }
+    }
+  }, [uploadAudio]);
+
+  const handlePlayAudio = useCallback(() => {
+    if (!audioUrl) return;
+
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setIsPlaying(false);
+      return;
+    }
+
+    const audio = new Audio(audioUrl);
+    audio.onended = () => { setIsPlaying(false); audioRef.current = null; };
+    audio.onerror = () => { setIsPlaying(false); audioRef.current = null; };
+    audioRef.current = audio;
+    setIsPlaying(true);
+    audio.play();
+  }, [audioUrl, isPlaying]);
+
+  const handleSave = useCallback(() => {
+    onSave(audioUrl);
+  }, [onSave, audioUrl]);
 
   const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Reset file input
     e.target.value = "";
 
-    // Check file size (20MB limit)
     if (file.size > 20 * 1024 * 1024) {
       toast({ variant: "destructive", title: "File too large", description: "Please upload an audio file under 20MB." });
       return;
@@ -121,9 +198,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
           body: formData,
         }
       );
@@ -171,9 +246,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-text-from-image`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
           body: formData,
         }
       );
@@ -200,26 +273,6 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
       setIsProcessing(false);
     }
   }, [text, onTextChange]);
-
-  const handleReadToMe = useCallback(() => {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-    if (!text.trim()) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voice = voices.find(v => v.voiceURI === selectedVoiceURI);
-    if (voice) utterance.voice = voice;
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
-  }, [text, isSpeaking, voices, selectedVoiceURI]);
 
   const isSupported = typeof window !== "undefined" && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
@@ -272,6 +325,22 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           </div>
         )}
       </div>
+
+      {/* Audio playback */}
+      {audioUrl && (
+        <div className="w-full flex items-center gap-3 px-3 py-2 bg-card border border-border rounded-md">
+          <Button
+            variant={isPlaying ? "destructive" : "outline"}
+            size="sm"
+            onClick={handlePlayAudio}
+            className="gap-2"
+          >
+            {isPlaying ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isPlaying ? "Stop" : "Play Recording"}
+          </Button>
+          <span className="text-xs text-muted-foreground">Voice recording saved</span>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
@@ -327,7 +396,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
         )}
 
         <Button
-          onClick={onSave}
+          onClick={handleSave}
           disabled={!text.trim() || isRecording || isProcessing}
           variant="outline"
           size="lg"
@@ -336,32 +405,6 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           <Save className="w-5 h-5" />
           {isEditing ? "Update" : "Save"}
         </Button>
-        <div className="flex items-center gap-2">
-          {voices.length > 0 && (
-            <select
-              value={selectedVoiceURI}
-              onChange={(e) => setSelectedVoiceURI(e.target.value)}
-              className="h-12 rounded-md border border-border bg-card text-foreground text-sm px-2 max-w-[140px]"
-              disabled={isSpeaking}
-            >
-              {voices.map((v) => (
-                <option key={v.voiceURI} value={v.voiceURI}>
-                  {v.name.replace(/Google |Microsoft |Apple /, "")} ({v.lang})
-                </option>
-              ))}
-            </select>
-          )}
-          <Button
-            onClick={handleReadToMe}
-            disabled={!text.trim() || isRecording || isProcessing}
-            variant={isSpeaking ? "destructive" : "outline"}
-            size="lg"
-            className="gap-2 text-lg px-6 py-6"
-          >
-            {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            {isSpeaking ? "Stop" : "Read"}
-          </Button>
-        </div>
 
         <Button
           onClick={onStart}

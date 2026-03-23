@@ -2,6 +2,7 @@ export interface Speech {
   id: string;
   title: string;
   text: string;
+  audioUrl?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -25,7 +26,7 @@ export function loadAllSpeeches(): Speech[] {
   return getSpeeches().sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function saveSpeech(speech: Omit<Speech, "id" | "createdAt" | "updatedAt">): Speech {
+export function saveSpeech(speech: Omit<Speech, "id" | "createdAt" | "updatedAt"> & { audioUrl?: string }): Speech {
   const speeches = getSpeeches();
   const newSpeech: Speech = {
     ...speech,
@@ -38,7 +39,7 @@ export function saveSpeech(speech: Omit<Speech, "id" | "createdAt" | "updatedAt"
   return newSpeech;
 }
 
-export function updateSpeech(id: string, updates: Partial<Pick<Speech, "title" | "text">>): Speech | null {
+export function updateSpeech(id: string, updates: Partial<Pick<Speech, "title" | "text" | "audioUrl">>): Speech | null {
   const speeches = getSpeeches();
   const index = speeches.findIndex((s) => s.id === id);
   if (index === -1) return null;

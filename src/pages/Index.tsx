@@ -11,6 +11,7 @@ const Index = () => {
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | undefined>();
   const [view, setView] = useState<View>("editor");
   const [speeches, setSpeeches] = useState<Speech[]>([]);
 
@@ -22,18 +23,20 @@ const Index = () => {
     refreshSpeeches();
   }, [refreshSpeeches]);
 
-  const handleSave = () => {
+  const handleSave = (newAudioUrl?: string) => {
     if (!text.trim()) return;
     const speechTitle = title.trim() || `Speech ${new Date().toLocaleDateString()}`;
+    const finalAudioUrl = newAudioUrl || audioUrl;
 
     if (editingId) {
-      updateSpeech(editingId, { title: speechTitle, text });
+      updateSpeech(editingId, { title: speechTitle, text, audioUrl: finalAudioUrl });
       toast({ title: "Updated", description: `"${speechTitle}" has been saved.` });
     } else {
-      const saved = saveSpeech({ title: speechTitle, text });
+      const saved = saveSpeech({ title: speechTitle, text, audioUrl: finalAudioUrl });
       setEditingId(saved.id);
       toast({ title: "Saved", description: `"${speechTitle}" has been saved.` });
     }
+    setAudioUrl(finalAudioUrl);
     setTitle(speechTitle);
     refreshSpeeches();
   };
@@ -42,6 +45,7 @@ const Index = () => {
     setText(speech.text);
     setTitle(speech.title);
     setEditingId(speech.id);
+    setAudioUrl(speech.audioUrl);
     setView("editor");
   };
 
@@ -49,6 +53,7 @@ const Index = () => {
     setText("");
     setTitle("");
     setEditingId(null);
+    setAudioUrl(undefined);
     setView("editor");
   };
 
@@ -85,6 +90,7 @@ const Index = () => {
         onSave={handleSave}
         onShowLibrary={() => setView("library")}
         isEditing={!!editingId}
+        currentAudioUrl={audioUrl}
       />
     </div>
   );
