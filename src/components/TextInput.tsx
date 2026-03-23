@@ -19,6 +19,7 @@ interface TextInputProps {
 export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
