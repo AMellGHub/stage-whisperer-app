@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Play, Mic, Square, Upload, Loader2 } from "lucide-react";
+import { Play, Mic, Square, Upload, Loader2, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -13,10 +13,12 @@ interface TextInputProps {
 
 export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingLabel, setProcessingLabel] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const startRecording = useCallback(() => {
     const w = window as any;
@@ -83,7 +85,8 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
       return;
     }
 
-    setIsTranscribing(true);
+    setIsProcessing(true);
+    setProcessingLabel("Transcribing audio...");
     try {
       const formData = new FormData();
       formData.append("audio", file);
@@ -118,7 +121,57 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
       console.error("Transcription error:", err);
       toast({ variant: "destructive", title: "Transcription failed", description: err.message || "Could not transcribe the audio file." });
     } finally {
-      setIsTranscribing(false);
+      setIsProcessing(false);
+    }
+  }, [text, onTextChange]);
+
+  const handleImageImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "File too large", description: "Please upload an image under 20MB." });
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingLabel("Extracting text from image...");
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-text-from-image`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Text extraction failed" }));
+        throw new Error(err.error || `Text extraction failed (${response.status})`);
+      }
+
+      const { text: extractedText } = await response.json();
+
+      if (extractedText) {
+        const separator = text && !text.endsWith("\n") ? "\n\n" : "";
+        onTextChange(text + separator + extractedText);
+        accumulatedRef.current = text + separator + extractedText;
+        toast({ title: "Text extracted", description: "Text from the image has been added." });
+      } else {
+        toast({ variant: "destructive", title: "No text found", description: "Couldn't find readable text in the image." });
+      }
+    } catch (err: any) {
+      console.error("OCR error:", err);
+      toast({ variant: "destructive", title: "Text extraction failed", description: err.message || "Could not extract text from the image." });
+    } finally {
+      setIsProcessing(false);
     }
   }, [text, onTextChange]);
 
@@ -131,7 +184,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
           Voice<span className="text-primary">Prompter</span>
         </h1>
         <p className="text-muted-foreground text-lg">
-          Paste your speech, dictate it, or import a voice memo.
+          Paste, dictate, import audio, or snap a photo of your speech.
         </p>
       </div>
 
@@ -142,9 +195,9 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             onTextChange(e.target.value);
             accumulatedRef.current = e.target.value;
           }}
-          placeholder={isRecording ? "Listening... speak now" : isTranscribing ? "Transcribing your recording..." : "Paste, type, dictate, or import a recording..."}
+          placeholder={isRecording ? "Listening... speak now" : isProcessing ? processingLabel : "Paste, type, dictate, or import..."}
           className={`min-h-[300px] bg-card border-border text-foreground text-base leading-relaxed resize-y focus:ring-primary transition-all ${isRecording ? "border-primary ring-1 ring-primary" : ""}`}
-          disabled={isTranscribing}
+          disabled={isProcessing}
         />
         {isRecording && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 text-primary text-xs font-medium animate-pulse">
@@ -152,11 +205,11 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             Recording
           </div>
         )}
-        {isTranscribing && (
+        {isProcessing && (
           <div className="absolute inset-0 flex items-center justify-center bg-card/80 rounded-md">
             <div className="flex items-center gap-2 text-primary">
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="text-sm font-medium">Transcribing audio...</span>
+              <span className="text-sm font-medium">{processingLabel}</span>
             </div>
           </div>
         )}
@@ -170,13 +223,33 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
         className="hidden"
       />
 
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleImageImport}
+        className="hidden"
+      />
+
       <div className="flex flex-wrap justify-center gap-3">
+        <Button
+          onClick={() => imageInputRef.current?.click()}
+          variant="outline"
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+          disabled={isRecording || isProcessing}
+        >
+          <Camera className="w-5 h-5" />
+          Photo
+        </Button>
+
         <Button
           onClick={() => fileInputRef.current?.click()}
           variant="outline"
           size="lg"
           className="gap-2 text-lg px-6 py-6"
-          disabled={isRecording || isTranscribing}
+          disabled={isRecording || isProcessing}
         >
           <Upload className="w-5 h-5" />
           Import
@@ -188,7 +261,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             variant={isRecording ? "destructive" : "outline"}
             size="lg"
             className="gap-2 text-lg px-6 py-6"
-            disabled={isTranscribing}
+            disabled={isProcessing}
           >
             {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             {isRecording ? "Stop" : "Dictate"}
@@ -197,12 +270,12 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
 
         <Button
           onClick={onStart}
-          disabled={!text.trim() || isRecording || isTranscribing}
+          disabled={!text.trim() || isRecording || isProcessing}
           size="lg"
           className="gap-2 text-lg px-8 py-6"
         >
           <Play className="w-5 h-5" />
-          Start Prompter
+          Start
         </Button>
       </div>
     </div>
