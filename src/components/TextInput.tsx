@@ -336,16 +336,32 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
           <Save className="w-5 h-5" />
           {isEditing ? "Update" : "Save"}
         </Button>
-        <Button
-          onClick={handleReadToMe}
-          disabled={!text.trim() || isRecording || isProcessing}
-          variant={isSpeaking ? "destructive" : "outline"}
-          size="lg"
-          className="gap-2 text-lg px-6 py-6"
-        >
-          {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          {isSpeaking ? "Stop" : "Read"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {voices.length > 0 && (
+            <select
+              value={selectedVoiceURI}
+              onChange={(e) => setSelectedVoiceURI(e.target.value)}
+              className="h-12 rounded-md border border-border bg-card text-foreground text-sm px-2 max-w-[140px]"
+              disabled={isSpeaking}
+            >
+              {voices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name.replace(/Google |Microsoft |Apple /, "")} ({v.lang})
+                </option>
+              ))}
+            </select>
+          )}
+          <Button
+            onClick={handleReadToMe}
+            disabled={!text.trim() || isRecording || isProcessing}
+            variant={isSpeaking ? "destructive" : "outline"}
+            size="lg"
+            className="gap-2 text-lg px-6 py-6"
+          >
+            {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            {isSpeaking ? "Stop" : "Read"}
+          </Button>
+        </div>
 
         <Button
           onClick={onStart}
