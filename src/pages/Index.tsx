@@ -97,9 +97,9 @@ const Index = () => {
         title={title}
         onTextChange={setText}
         onTitleChange={setTitle}
-        onStart={() => { setPlayWithAudio(false); setView("prompter"); }}
+        onStart={() => { if (text.trim()) handleSave(); setPlayWithAudio(false); setView("prompter"); }}
         onSave={handleSave}
-        onShowLibrary={() => setView("library")}
+        onShowLibrary={() => { if (text.trim()) handleSave(); setView("library"); }}
         isEditing={!!editingId}
         currentAudioUrl={audioUrl}
         onPlayRecording={() => { setPlayWithAudio(true); setView("prompter"); }}
