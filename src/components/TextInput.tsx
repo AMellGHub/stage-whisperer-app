@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Play, Mic, Square } from "lucide-react";
+import { Play, Mic, Square, Upload, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface TextInputProps {
   text: string;
@@ -11,8 +13,10 @@ interface TextInputProps {
 
 export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startRecording = useCallback(() => {
     const w = window as any;
@@ -41,11 +45,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
     };
 
     recognition.onend = () => {
-      // Save finalized text and restart for continuous dictation
       if (recognitionRef.current === recognition) {
-        // Update accumulated with only final results
-        const currentText = accumulatedRef.current;
-        // Re-read latest from DOM-like state isn't possible, so we store on each final
         try { recognition.start(); } catch {}
       }
     };
@@ -70,6 +70,58 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
     setIsRecording(false);
   }, []);
 
+  const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset file input
+    e.target.value = "";
+
+    // Check file size (20MB limit)
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "File too large", description: "Please upload an audio file under 20MB." });
+      return;
+    }
+
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append("audio", file);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Transcription failed" }));
+        throw new Error(err.error || `Transcription failed (${response.status})`);
+      }
+
+      const { text: transcribedText } = await response.json();
+
+      if (transcribedText) {
+        const separator = text && !text.endsWith("\n") ? "\n\n" : "";
+        onTextChange(text + separator + transcribedText);
+        accumulatedRef.current = text + separator + transcribedText;
+        toast({ title: "Transcription complete", description: "Your recording has been added to the text." });
+      } else {
+        toast({ variant: "destructive", title: "No speech detected", description: "The recording didn't contain recognizable speech." });
+      }
+    } catch (err: any) {
+      console.error("Transcription error:", err);
+      toast({ variant: "destructive", title: "Transcription failed", description: err.message || "Could not transcribe the audio file." });
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [text, onTextChange]);
+
   const isSupported = typeof window !== "undefined" && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
   return (
@@ -79,7 +131,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
           Voice<span className="text-primary">Prompter</span>
         </h1>
         <p className="text-muted-foreground text-lg">
-          Paste your speech, dictate it, then read it back with voice tracking.
+          Paste your speech, dictate it, or import a voice memo.
         </p>
       </div>
 
@@ -90,8 +142,9 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             onTextChange(e.target.value);
             accumulatedRef.current = e.target.value;
           }}
-          placeholder={isRecording ? "Listening... speak now" : "Paste, type, or dictate your speech here..."}
+          placeholder={isRecording ? "Listening... speak now" : isTranscribing ? "Transcribing your recording..." : "Paste, type, dictate, or import a recording..."}
           className={`min-h-[300px] bg-card border-border text-foreground text-base leading-relaxed resize-y focus:ring-primary transition-all ${isRecording ? "border-primary ring-1 ring-primary" : ""}`}
+          disabled={isTranscribing}
         />
         {isRecording && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 text-primary text-xs font-medium animate-pulse">
@@ -99,15 +152,43 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             Recording
           </div>
         )}
+        {isTranscribing && (
+          <div className="absolute inset-0 flex items-center justify-center bg-card/80 rounded-md">
+            <div className="flex items-center gap-2 text-primary">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm font-medium">Transcribing audio...</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex gap-3">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.webm"
+        onChange={handleFileImport}
+        className="hidden"
+      />
+
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          variant="outline"
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+          disabled={isRecording || isTranscribing}
+        >
+          <Upload className="w-5 h-5" />
+          Import
+        </Button>
+
         {isSupported && (
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             variant={isRecording ? "destructive" : "outline"}
             size="lg"
             className="gap-2 text-lg px-6 py-6"
+            disabled={isTranscribing}
           >
             {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             {isRecording ? "Stop" : "Dictate"}
@@ -116,7 +197,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
 
         <Button
           onClick={onStart}
-          disabled={!text.trim() || isRecording}
+          disabled={!text.trim() || isRecording || isTranscribing}
           size="lg"
           className="gap-2 text-lg px-8 py-6"
         >
