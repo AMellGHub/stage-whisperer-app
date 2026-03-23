@@ -2,6 +2,7 @@ export interface Speech {
   id: string;
   title: string;
   text: string;
+  audioUrl?: string;
   createdAt: number;
   updatedAt: number;
 }
