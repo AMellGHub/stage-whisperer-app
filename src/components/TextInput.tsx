@@ -85,7 +85,8 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
       return;
     }
 
-    setIsTranscribing(true);
+    setIsProcessing(true);
+    setProcessingLabel("Transcribing audio...");
     try {
       const formData = new FormData();
       formData.append("audio", file);
@@ -120,7 +121,57 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
       console.error("Transcription error:", err);
       toast({ variant: "destructive", title: "Transcription failed", description: err.message || "Could not transcribe the audio file." });
     } finally {
-      setIsTranscribing(false);
+      setIsProcessing(false);
+    }
+  }, [text, onTextChange]);
+
+  const handleImageImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "File too large", description: "Please upload an image under 20MB." });
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingLabel("Extracting text from image...");
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-text-from-image`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Text extraction failed" }));
+        throw new Error(err.error || `Text extraction failed (${response.status})`);
+      }
+
+      const { text: extractedText } = await response.json();
+
+      if (extractedText) {
+        const separator = text && !text.endsWith("\n") ? "\n\n" : "";
+        onTextChange(text + separator + extractedText);
+        accumulatedRef.current = text + separator + extractedText;
+        toast({ title: "Text extracted", description: "Text from the image has been added." });
+      } else {
+        toast({ variant: "destructive", title: "No text found", description: "Couldn't find readable text in the image." });
+      }
+    } catch (err: any) {
+      console.error("OCR error:", err);
+      toast({ variant: "destructive", title: "Text extraction failed", description: err.message || "Could not extract text from the image." });
+    } finally {
+      setIsProcessing(false);
     }
   }, [text, onTextChange]);
 
