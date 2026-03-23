@@ -157,23 +157,6 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
     }
   }, [uploadAudio]);
 
-  const handlePlayAudio = useCallback(() => {
-    if (!audioUrl) return;
-
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setIsPlaying(false);
-      return;
-    }
-
-    const audio = new Audio(audioUrl);
-    audio.onended = () => { setIsPlaying(false); audioRef.current = null; };
-    audio.onerror = () => { setIsPlaying(false); audioRef.current = null; };
-    audioRef.current = audio;
-    setIsPlaying(true);
-    audio.play();
-  }, [audioUrl, isPlaying]);
 
   const handleSave = useCallback(() => {
     onSave(audioUrl);
