@@ -12,6 +12,7 @@ const Index = () => {
   const [title, setTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | undefined>();
+  const [playWithAudio, setPlayWithAudio] = useState(false);
   const [view, setView] = useState<View>("editor");
   const [speeches, setSpeeches] = useState<Speech[]>([]);
 
