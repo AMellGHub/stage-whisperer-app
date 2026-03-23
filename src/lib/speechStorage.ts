@@ -39,7 +39,7 @@ export function saveSpeech(speech: Omit<Speech, "id" | "createdAt" | "updatedAt"
   return newSpeech;
 }
 
-export function updateSpeech(id: string, updates: Partial<Pick<Speech, "title" | "text">>): Speech | null {
+export function updateSpeech(id: string, updates: Partial<Pick<Speech, "title" | "text" | "audioUrl">>): Speech | null {
   const speeches = getSpeeches();
   const index = speeches.findIndex((s) => s.id === id);
   if (index === -1) return null;
