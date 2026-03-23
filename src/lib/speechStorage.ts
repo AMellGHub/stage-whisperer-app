@@ -26,7 +26,7 @@ export function loadAllSpeeches(): Speech[] {
   return getSpeeches().sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function saveSpeech(speech: Omit<Speech, "id" | "createdAt" | "updatedAt">): Speech {
+export function saveSpeech(speech: Omit<Speech, "id" | "createdAt" | "updatedAt"> & { audioUrl?: string }): Speech {
   const speeches = getSpeeches();
   const newSpeech: Speech = {
     ...speech,
