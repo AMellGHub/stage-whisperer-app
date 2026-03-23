@@ -184,7 +184,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
           Voice<span className="text-primary">Prompter</span>
         </h1>
         <p className="text-muted-foreground text-lg">
-          Paste your speech, dictate it, or import a voice memo.
+          Paste, dictate, import audio, or snap a photo of your speech.
         </p>
       </div>
 
@@ -195,9 +195,9 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             onTextChange(e.target.value);
             accumulatedRef.current = e.target.value;
           }}
-          placeholder={isRecording ? "Listening... speak now" : isTranscribing ? "Transcribing your recording..." : "Paste, type, dictate, or import a recording..."}
+          placeholder={isRecording ? "Listening... speak now" : isProcessing ? processingLabel : "Paste, type, dictate, or import..."}
           className={`min-h-[300px] bg-card border-border text-foreground text-base leading-relaxed resize-y focus:ring-primary transition-all ${isRecording ? "border-primary ring-1 ring-primary" : ""}`}
-          disabled={isTranscribing}
+          disabled={isProcessing}
         />
         {isRecording && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 text-primary text-xs font-medium animate-pulse">
@@ -205,11 +205,11 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             Recording
           </div>
         )}
-        {isTranscribing && (
+        {isProcessing && (
           <div className="absolute inset-0 flex items-center justify-center bg-card/80 rounded-md">
             <div className="flex items-center gap-2 text-primary">
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="text-sm font-medium">Transcribing audio...</span>
+              <span className="text-sm font-medium">{processingLabel}</span>
             </div>
           </div>
         )}
@@ -223,13 +223,33 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
         className="hidden"
       />
 
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleImageImport}
+        className="hidden"
+      />
+
       <div className="flex flex-wrap justify-center gap-3">
+        <Button
+          onClick={() => imageInputRef.current?.click()}
+          variant="outline"
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+          disabled={isRecording || isProcessing}
+        >
+          <Camera className="w-5 h-5" />
+          Photo
+        </Button>
+
         <Button
           onClick={() => fileInputRef.current?.click()}
           variant="outline"
           size="lg"
           className="gap-2 text-lg px-6 py-6"
-          disabled={isRecording || isTranscribing}
+          disabled={isRecording || isProcessing}
         >
           <Upload className="w-5 h-5" />
           Import
@@ -241,7 +261,7 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             variant={isRecording ? "destructive" : "outline"}
             size="lg"
             className="gap-2 text-lg px-6 py-6"
-            disabled={isTranscribing}
+            disabled={isProcessing}
           >
             {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             {isRecording ? "Stop" : "Dictate"}
@@ -250,12 +270,12 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
 
         <Button
           onClick={onStart}
-          disabled={!text.trim() || isRecording || isTranscribing}
+          disabled={!text.trim() || isRecording || isProcessing}
           size="lg"
           className="gap-2 text-lg px-8 py-6"
         >
           <Play className="w-5 h-5" />
-          Start Prompter
+          Start
         </Button>
       </div>
     </div>
