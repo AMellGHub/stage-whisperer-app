@@ -1,17 +1,22 @@
 import { useState, useCallback, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Play, Mic, Square, Upload, Loader2, Camera } from "lucide-react";
+import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 interface TextInputProps {
   text: string;
+  title: string;
   onTextChange: (text: string) => void;
+  onTitleChange: (title: string) => void;
   onStart: () => void;
+  onSave: () => void;
+  onShowLibrary: () => void;
+  isEditing: boolean;
 }
 
-export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
+export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
@@ -180,13 +185,25 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-3xl mx-auto px-4">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          Voice<span className="text-primary">Prompter</span>
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Voice<span className="text-primary">Prompter</span>
+          </h1>
+          <Button variant="ghost" size="icon" onClick={onShowLibrary} className="text-muted-foreground">
+            <BookOpen className="w-5 h-5" />
+          </Button>
+        </div>
         <p className="text-muted-foreground text-lg">
           Paste, dictate, import audio, or snap a photo of your speech.
         </p>
       </div>
+
+      <input
+        value={title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        placeholder="Speech title..."
+        className="w-full bg-card border border-border rounded-md px-3 py-2 text-foreground text-lg font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+      />
 
       <div className="w-full relative">
         <Textarea
@@ -267,6 +284,17 @@ export function TextInput({ text, onTextChange, onStart }: TextInputProps) {
             {isRecording ? "Stop" : "Dictate"}
           </Button>
         )}
+
+        <Button
+          onClick={onSave}
+          disabled={!text.trim() || isRecording || isProcessing}
+          variant="outline"
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+        >
+          <Save className="w-5 h-5" />
+          {isEditing ? "Update" : "Save"}
+        </Button>
 
         <Button
           onClick={onStart}
