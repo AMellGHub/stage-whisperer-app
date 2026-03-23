@@ -21,10 +21,30 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Load available voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const available = window.speechSynthesis.getVoices();
+      if (available.length > 0) {
+        setVoices(available);
+        // Default to first English voice
+        if (!selectedVoiceURI) {
+          const defaultVoice = available.find(v => v.lang.startsWith("en") && v.default) || available.find(v => v.lang.startsWith("en")) || available[0];
+          if (defaultVoice) setSelectedVoiceURI(defaultVoice.voiceURI);
+        }
+      }
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
 
   const startRecording = useCallback(() => {
     const w = window as any;
