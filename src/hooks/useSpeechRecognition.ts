@@ -14,7 +14,6 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
   useEffect(() => {
     const w = window as any;
     setIsSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
-    setIsSupported(!!SpeechRecognition);
   }, []);
 
   const stop = useCallback(() => {
