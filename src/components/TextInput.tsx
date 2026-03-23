@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen } from "lucide-react";
+import { Play, Mic, Square, Upload, Loader2, Camera, Save, BookOpen, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -19,6 +19,7 @@ interface TextInputProps {
 export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
@@ -180,6 +181,24 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
     }
   }, [text, onTextChange]);
 
+  const handleReadToMe = useCallback(() => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    if (!text.trim()) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }, [text, isSpeaking]);
+
   const isSupported = typeof window !== "undefined" && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
   return (
@@ -294,6 +313,16 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
         >
           <Save className="w-5 h-5" />
           {isEditing ? "Update" : "Save"}
+        </Button>
+        <Button
+          onClick={handleReadToMe}
+          disabled={!text.trim() || isRecording || isProcessing}
+          variant={isSpeaking ? "destructive" : "outline"}
+          size="lg"
+          className="gap-2 text-lg px-6 py-6"
+        >
+          {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          {isSpeaking ? "Stop" : "Read"}
         </Button>
 
         <Button
