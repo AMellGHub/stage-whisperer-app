@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Play, Mic, Square, Upload, Loader2 } from "lucide-react";
+import { Play, Mic, Square, Upload, Loader2, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
