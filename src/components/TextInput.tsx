@@ -185,13 +185,25 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-3xl mx-auto px-4">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          Voice<span className="text-primary">Prompter</span>
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Voice<span className="text-primary">Prompter</span>
+          </h1>
+          <Button variant="ghost" size="icon" onClick={onShowLibrary} className="text-muted-foreground">
+            <BookOpen className="w-5 h-5" />
+          </Button>
+        </div>
         <p className="text-muted-foreground text-lg">
           Paste, dictate, import audio, or snap a photo of your speech.
         </p>
       </div>
+
+      <input
+        value={title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        placeholder="Speech title..."
+        className="w-full bg-card border border-border rounded-md px-3 py-2 text-foreground text-lg font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+      />
 
       <div className="w-full relative">
         <Textarea
