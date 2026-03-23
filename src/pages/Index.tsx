@@ -62,6 +62,7 @@ const Index = () => {
       <TeleprompterDisplay
         text={text}
         onExit={() => setView("editor")}
+        audioUrl={playWithAudio ? audioUrl : undefined}
       />
     );
   }
