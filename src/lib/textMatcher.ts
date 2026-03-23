@@ -1,6 +1,7 @@
 /**
  * Finds the best matching position in the script based on spoken words.
  * Uses a sliding window approach with fuzzy matching.
+ * Constrained to prevent jumping too far ahead on common words.
  */
 export function findMatchPosition(
   scriptWords: string[],
@@ -15,44 +16,65 @@ export function findMatchPosition(
 
   if (normalizedSpoken.length === 0) return lastMatchIndex;
 
-  // Search window: from lastMatchIndex forward, with some look-back
-  const searchStart = Math.max(0, lastMatchIndex - 3);
-  const searchEnd = Math.min(normalizedScript.length, lastMatchIndex + 60);
+  // Tight search window: only look a few words ahead to prevent jumping
+  const searchStart = Math.max(0, lastMatchIndex - 2);
+  const maxLookAhead = 15; // max words ahead we'll consider
+  const searchEnd = Math.min(normalizedScript.length, lastMatchIndex + maxLookAhead);
 
-  // Take last N spoken words for matching
-  const recentSpoken = normalizedSpoken.slice(-6);
-  
+  // Take last N spoken words for matching (use more for better accuracy)
+  const recentSpoken = normalizedSpoken.slice(-8);
+
+  // Skip very short/common words when they appear alone
+  const commonWords = new Set(["a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "is", "it", "i", "we", "he", "she", "be", "do", "no", "so", "if", "my", "as", "up"]);
+
   let bestScore = -1;
   let bestIndex = lastMatchIndex;
 
   for (let i = searchStart; i < searchEnd; i++) {
     let score = 0;
-    let matched = 0;
-    
+    let consecutiveMatches = 0;
+    let maxConsecutive = 0;
+    let totalMatched = 0;
+
     for (let j = 0; j < recentSpoken.length; j++) {
       const scriptIdx = i + j;
       if (scriptIdx >= normalizedScript.length) break;
-      
-      if (normalizedScript[scriptIdx] === recentSpoken[j]) {
-        score += 3;
-        matched++;
-      } else if (isSimilar(normalizedScript[scriptIdx], recentSpoken[j])) {
-        score += 1;
-        matched++;
+
+      const isMatch = normalizedScript[scriptIdx] === recentSpoken[j];
+      const isFuzzy = !isMatch && isSimilar(normalizedScript[scriptIdx], recentSpoken[j]);
+
+      if (isMatch || isFuzzy) {
+        const wordScore = isMatch ? 3 : 1;
+        // Common/short words get less weight to prevent false jumps
+        const isCommon = commonWords.has(recentSpoken[j]) || recentSpoken[j].length <= 2;
+        score += isCommon ? wordScore * 0.5 : wordScore;
+        consecutiveMatches++;
+        maxConsecutive = Math.max(maxConsecutive, consecutiveMatches);
+        totalMatched++;
+      } else {
+        consecutiveMatches = 0;
       }
     }
 
-    // Prefer forward movement
-    if (i >= lastMatchIndex) score += 0.5;
-    
-    if (score > bestScore && matched >= Math.min(2, recentSpoken.length)) {
+    // Bonus for consecutive matches (much more reliable)
+    score += maxConsecutive * 2;
+
+    // Penalize distance from current position
+    const distance = Math.abs(i - lastMatchIndex);
+    score -= distance * 0.3;
+
+    // Require at least 3 consecutive matches, or 2 if very close
+    const minConsecutive = distance <= 3 ? 2 : 3;
+
+    if (score > bestScore && maxConsecutive >= minConsecutive && totalMatched >= 2) {
       bestScore = score;
-      bestIndex = i + matched;
+      bestIndex = i + totalMatched;
     }
   }
 
-  // Only move forward, never backward (unless by a small margin)
-  return Math.max(lastMatchIndex, bestIndex);
+  // Never jump more than maxLookAhead words at once
+  const maxJump = lastMatchIndex + maxLookAhead;
+  return Math.min(Math.max(lastMatchIndex, bestIndex), maxJump);
 }
 
 function isSimilar(a: string, b: string): boolean {
