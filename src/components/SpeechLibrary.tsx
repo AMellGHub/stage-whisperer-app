@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 interface SpeechLibraryProps {
   speeches: Speech[];
   onSelect: (speech: Speech) => void;
+  onPlay: (speech: Speech) => void;
   onNew: () => void;
   onRefresh: () => void;
 }
