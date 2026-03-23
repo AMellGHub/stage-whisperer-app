@@ -10,6 +10,8 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
   const restartTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const accumulatedFinalRef = useRef("");
+  const sessionFinalRef = useRef("");
 
   useEffect(() => {
     const w = window as any;
@@ -32,6 +34,8 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
     if (!SpeechRecognitionCtor) return;
 
     stop();
+    accumulatedFinalRef.current = "";
+    sessionFinalRef.current = "";
 
     const recognition = new SpeechRecognitionCtor();
     recognition.continuous = continuous;
@@ -41,20 +45,27 @@ export function useSpeechRecognition({ onResult, continuous = true }: UseSpeechR
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
-      let final = "";
+      let sessionFinal = "";
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript;
+          sessionFinal += result[0].transcript;
         } else {
           interim += result[0].transcript;
         }
       }
-      onResult((final + " " + interim).trim());
+      sessionFinalRef.current = sessionFinal;
+      const fullTranscript = (accumulatedFinalRef.current + " " + sessionFinal + " " + interim).trim();
+      onResult(fullTranscript);
     };
 
     recognition.onend = () => {
       if (recognitionRef.current === recognition) {
+        // Accumulate finals from this session before restarting
+        if (sessionFinalRef.current) {
+          accumulatedFinalRef.current = (accumulatedFinalRef.current + " " + sessionFinalRef.current).trim();
+          sessionFinalRef.current = "";
+        }
         // Auto-restart for continuous listening
         restartTimeoutRef.current = setTimeout(() => {
           if (recognitionRef.current === recognition) {
