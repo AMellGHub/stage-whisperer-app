@@ -10,13 +10,15 @@ interface TeleprompterDisplayProps {
   audioUrl?: string;
 }
 
-export function TeleprompterDisplay({ text, onExit }: TeleprompterDisplayProps) {
+export function TeleprompterDisplay({ text, onExit, audioUrl }: TeleprompterDisplayProps) {
   const words = text.split(/\s+/).filter(Boolean);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [fontSize, setFontSize] = useState(2.5); // rem
+  const [fontSize, setFontSize] = useState(2.5);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const currentWordRef = useRef<HTMLSpanElement>(null);
   const lastMatchRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleSpeechResult = useCallback(
     (transcript: string) => {
@@ -40,6 +42,18 @@ export function TeleprompterDisplay({ text, onExit }: TeleprompterDisplayProps) 
       start();
     }
   }, [isSupported, start]);
+
+  // Auto-play audio if provided
+  useEffect(() => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => setIsAudioPlaying(false);
+      audio.onerror = () => setIsAudioPlaying(false);
+      audio.play().then(() => setIsAudioPlaying(true)).catch(() => {});
+      return () => { audio.pause(); audioRef.current = null; };
+    }
+  }, [audioUrl]);
 
   // Scroll current word into view
   useEffect(() => {
