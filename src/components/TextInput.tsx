@@ -23,7 +23,7 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
   const [audioUrl, setAudioUrl] = useState<string | undefined>(currentAudioUrl);
-  const [isPlaying, setIsPlaying] = useState(false);
+  
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef(text);
   const fileInputRef = useRef<HTMLInputElement>(null);
