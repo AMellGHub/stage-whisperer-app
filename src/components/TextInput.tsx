@@ -15,9 +15,10 @@ interface TextInputProps {
   onShowLibrary: () => void;
   isEditing: boolean;
   currentAudioUrl?: string;
+  onPlayRecording?: () => void;
 }
 
-export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing, currentAudioUrl }: TextInputProps) {
+export function TextInput({ text, title, onTextChange, onTitleChange, onStart, onSave, onShowLibrary, isEditing, currentAudioUrl, onPlayRecording }: TextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
