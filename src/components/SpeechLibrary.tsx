@@ -88,7 +88,7 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onRefresh }: 
                     <span>Updated {formatDate(speech.updatedAt)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {speech.audioUrl && (
                     <Button
                       variant="outline"
@@ -99,20 +99,21 @@ export function SpeechLibrary({ speeches, onSelect, onPlay, onNew, onRefresh }: 
                         onPlay(speech);
                       }}
                     >
-                      <Play className="w-3.5 h-3.5" />
-                      Play
+                      <Headphones className="w-3.5 h-3.5" />
+                      Listen
                     </Button>
                   )}
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    variant="default"
+                    size="sm"
+                    className="gap-1.5 text-xs h-8"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelect(speech);
                     }}
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Mic className="w-3.5 h-3.5" />
+                    Practice
                   </Button>
                   <Button
                     variant="ghost"
