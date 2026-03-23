@@ -11,6 +11,7 @@ interface SpeechLibraryProps {
   onSelect: (speech: Speech) => void;
   onPlay: (speech: Speech) => void;
   onNew: () => void;
+  onBack: () => void;
   onRefresh: () => void;
 }
 
