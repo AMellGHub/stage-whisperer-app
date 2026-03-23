@@ -41,10 +41,21 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
 
   const uploadAudio = useCallback(async (blob: Blob): Promise<string | undefined> => {
     try {
-      const fileName = `recording-${Date.now()}.webm`;
+      const mimeType = blob.type || "audio/webm";
+      const extension = mimeType.includes("mp4")
+        ? "m4a"
+        : mimeType.includes("mpeg")
+          ? "mp3"
+          : mimeType.includes("aac")
+            ? "aac"
+            : mimeType.includes("ogg")
+              ? "ogg"
+              : "webm";
+      const fileName = `recording-${Date.now()}.${extension}`;
+
       const { data, error } = await supabase.storage
         .from("audio-recordings")
-        .upload(fileName, blob, { contentType: "audio/webm" });
+        .upload(fileName, blob, { contentType: mimeType });
 
       if (error) throw error;
 
@@ -100,7 +111,16 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
     // Start audio recording via MediaRecorder
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const preferredMimeType = typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function"
+        ? ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg", "audio/aac", "audio/ogg"].find((type) =>
+            MediaRecorder.isTypeSupported(type)
+          )
+        : undefined;
+
+      const mediaRecorder = preferredMimeType
+        ? new MediaRecorder(stream, { mimeType: preferredMimeType })
+        : new MediaRecorder(stream);
+
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
@@ -111,6 +131,11 @@ export function TextInput({ text, title, onTextChange, onTitleChange, onStart, o
       mediaRecorder.start(1000); // collect in 1s chunks
     } catch (err) {
       console.warn("Could not start audio recording:", err);
+      toast({
+        variant: "destructive",
+        title: "Audio recording unavailable",
+        description: "This browser can dictate text, but audio playback recording isn't supported here.",
+      });
     }
 
     recognitionRef.current = recognition;
